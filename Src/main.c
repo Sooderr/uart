@@ -14,6 +14,8 @@
 #define USART2_SR  (*(volatile uint32_t*)0x40004400U)
 #define USART2_DR  (*(volatile uint32_t*)0x40004404U)
 
+#define GPIOA_ODR (*(volatile uint32_t*)0x40020014U)
+
 
 void uart_send_char (char c)
 {
@@ -36,7 +38,13 @@ while(*s != '\0')
 
 }
 
-
+char uart_read_char(void)
+{
+    while ((USART2_SR & (1U << 5)) == 0)
+    {
+    }
+    return (char)USART2_DR;
+}
 
 
 int main(void)
@@ -51,19 +59,33 @@ int main(void)
 	GPIOA_AFRL &= ~(0xFU << 8);
 	GPIOA_AFRL |= (7U << 8);
 
+	GPIOA_MODER &= ~(3U << 6);
+	GPIOA_MODER |= (2U << 6);
+
+	GPIOA_AFRL &= ~(0xFU << 12);
+	GPIOA_AFRL |= (7U << 12);
+
 	USART2_BRR = 139U;
 
 	USART2_CR1 |= (1U << 3);
 	USART2_CR1 |= (1U << 13);
+	USART2_CR1 |= (1U << 2);
+
+
+	GPIOA_MODER &= ~(3U << 10);
+	GPIOA_MODER |=  (1U << 10);
 
 while(1)
 {
-	uart_send_string("The main thing is not to give up.\r\n");
 
-
-	for (volatile uint32_t i = 0; i < 1000000; i++)
+char c = uart_read_char();
+	if(c == '1')
 	{
-
+		GPIOA_ODR |= (1U << 5);
+	}
+	else if(c == '0')
+	{
+		GPIOA_ODR &= ~(1U << 5);
 	}
 }
 
